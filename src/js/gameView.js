@@ -113,6 +113,8 @@ export const renderModal = (answers, score, best, name, visited) => {
     $(`#${names.modal}`).modal();
 }
 
+export const closeModal = () => $(`#${names.modal}`).modal('hide');
+
 export const getName = () => elements.nameInput.value;
 
 export const renderGreeting = (name, visited) => {

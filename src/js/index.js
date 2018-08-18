@@ -5,7 +5,9 @@ import * as gameView from './gameView.js';
 ////////////////////////
 // GAME STATE
 ////////////////////////
-const state = {};
+const state = {
+    modalIsActive: false
+};
 
 const wordsLists = new Map();
 
@@ -25,9 +27,9 @@ const setDefaultState = () => {
     state.curAnswers = 0;
     state.countDownTime = 0;
     state.difficulty = {
-        time: 300,
-        timeLimit: 60,
-        timeDecreaseStep: 5,
+        time: 300, //Default time given for writing answer
+        timeLimit: 60, // Minimum possible time
+        timeDecreaseStep: 5, // Value that is substracted from time with each correct answer
         range: levels['default']
     };
 
@@ -50,17 +52,26 @@ const setListeners = () => {
     gameView.elements.btnSendName.addEventListener('click', sendNameHandler);
 };
 
+// Listen for modal mindow hide event
+$(`#${gameView.names.modal}`).on('hidden.bs.modal', function () {
+    state.modalIsActive = false;
+});
+
 const keyPressHandler = (e) => {
     if (e.key === 'Enter' && e.shiftKey){
         // check if game already playing
         // init game start
-        if (!state.isPlaying) start();
+        
+        if (!state.isPlaying && !state.modalIsActive) start();
 
-    } if (e.key === 'Enter' && state.isPlaying && !e.shiftKey) {
+    } else if (e.key === 'Enter' && state.isPlaying && !e.shiftKey) {
         enterHandler();
+    } else if (e.key === 'Enter' && state.modalIsActive && state.storage.userName) {
+        // close Modal
+        hideModal();
     }
 }
-
+//  hsl(354.3, 70.5%, 53.5%)
 const enterHandler = () => {
     // Get word from input
     const input = gameView.getInput();
@@ -93,7 +104,7 @@ const sendNameHandler = (e) => {
         gameView.renderDisplayMsg(state.storage.getItem('userName'));
 
         // close Modal
-        $(`#${gameView.names.modal}`).modal('hide')
+        hideModal();
     } else {
         // show error
     }
@@ -207,6 +218,9 @@ const gameOver = () => {
                          state.bestScore, 
                          state.storage.getItem('userName'),
                          state.storage.getItem('visited'));
+    
+    // Set modal state as active
+    state.modalIsActive = true;
     
     // Upgrade best score
     updateBestScore();
@@ -334,14 +348,24 @@ const beutifyTime= (time) => {
 const getRemainingTime = () => state.countDownTime;
 
 ////////////////////////
+// MODAL LOGIC
+////////////////////////
+
+const hideModal = () => {
+    gameView.closeModal();
+    state.modalIsActive = false;
+}
+
+////////////////////////
 // LOCAL STORAGE LOGIC
 ////////////////////////
 
 const initStorage = () => {
     state.storage = window.localStorage;
-    // Remember user
-    state.storage.setItem('visited', true);
 }
+
+// Remember user
+const setVisited = () => state.storage.setItem('visited', true);
 
 const updateStorageBestScore = () => {
     state.storage.setItem('bestScore', JSON.stringify(state.bestScore));
@@ -366,7 +390,9 @@ const init = () => {
     gameView.renderBestScore(state.bestScore.score);
     gameView.renderDefaultWord();
     gameView.renderGreeting(state.storage.getItem('userName'), state.storage.getItem('visited'));
-
+    
+    // Remember user
+    setVisited();
     // Set class 'loaded' for removing page loader
     // Time is hard coded
     setTimeout(()=>{
